@@ -20,10 +20,15 @@ from fastapi import FastAPI
 
 from app.core.init_db import init_db
 from app.routers.products import router as products_router
+from app.routers.settings import router as settings_router
+from app.routers.sales import router as sales_router
 
 
 app = FastAPI(title="Gestion de Ventas", version="0.1.0")
 app.include_router(products_router)
+app.include_router(settings_router)
+app.include_router(sales_router)
+
 
 
 @app.on_event("startup")
