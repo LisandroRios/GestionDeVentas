@@ -10,6 +10,8 @@ from app.models.product import ProductVariant
 from app.models.sale import Sale, SaleItem
 from app.models.settings import Settings
 from app.schemas.sale import SaleCreate, SaleOut
+from app.models.cash import CashSession
+
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -33,12 +35,25 @@ def _get_settings(db: Session) -> Settings:
         db.refresh(settings)
     return settings
 
+def _has_open_cash(db: Session) -> bool:
+    return (
+        db.query(CashSession)
+        .filter(CashSession.closed_at.is_(None))
+        .first()
+        is not None
+    )
 
 # -------------------------
 # Crear venta
 # -------------------------
 @router.post("/", response_model=SaleOut)
 def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
+    if not _has_open_cash(db):
+        raise HTTPException(
+        status_code=400,
+        detail="Cannot register sale: no open cash session",
+    )
+
     if not payload.items:
         raise HTTPException(status_code=400, detail="Sale must contain at least 1 item")
 

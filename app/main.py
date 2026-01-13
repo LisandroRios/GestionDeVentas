@@ -22,6 +22,7 @@ from app.core.init_db import init_db
 from app.routers.products import router as products_router
 from app.routers.settings import router as settings_router
 from app.routers.sales import router as sales_router
+from app.routers.cash import router as cash_router
 
 
 app = FastAPI(title="Gestion de Ventas", version="0.1.0")
@@ -39,3 +40,5 @@ def on_startup():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+app.include_router(cash_router)
