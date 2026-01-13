@@ -27,6 +27,8 @@ class SaleItemOut(BaseModel):
         from_attributes = True
 
 
+from datetime import datetime
+
 class SaleOut(BaseModel):
     id: int
     created_at: datetime
@@ -38,3 +40,4 @@ class SaleOut(BaseModel):
 
     class Config:
         from_attributes = True
+
