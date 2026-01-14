@@ -1,0 +1,142 @@
+body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0b0f19; color: #e8eefc; }
+
+.topbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid #24304a;
+  background: #0f1629;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.container { padding: 20px; max-width: 980px; margin: 0 auto; }
+
+/* más orden visual entre tarjetas */
+.card {
+  background: #111a30;
+  border: 1px solid #24304a;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+/* helpers */
+.hidden { display: none; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
+
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #3a4b75;
+  background: #1a2a52;
+  color: #e8eefc;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+label { font-size: 13px; opacity: .85; }
+
+input, select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #24304a;
+  background: #0b1020;
+  color: #e8eefc;
+}
+
+.muted { opacity: .75; margin: 6px 0 0; }
+
+.output {
+  margin-top: 12px;
+  background: #0b1020;
+  border: 1px solid #24304a;
+  border-radius: 12px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #24304a;
+  background: #0b1020;
+}
+.itemRow small { opacity: .8; }
+.itemRow button { padding: 6px 10px; border-radius: 10px; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.stat {
+  background: #0b1020;
+  border: 1px solid #24304a;
+  border-radius: 12px;
+  padding: 12px;
+}
+.statLabel { opacity: .8; font-size: 13px; }
+.statValue { font-size: 20px; font-weight: 700; margin-top: 6px; }
+
+/* Nav sticky */
+.nav{
+  display: flex;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #24304a;
+  background: #0f1629;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav a{
+  color: #e8eefc;
+  text-decoration: none;
+  opacity: .85;
+  padding: 6px 10px;
+  border: 1px solid #24304a;
+  border-radius: 10px;
+  background: #0b1020;
+}
+.nav a:hover{ opacity: 1; filter: brightness(1.1); }
+.nav a.active{
+  opacity: 1;
+  border-color: #3a4b75;
+  filter: brightness(1.15);
+}
+
+/* para que el sticky nav no tape títulos al hacer click en anclas */
+#caja, #venta, #dashboard, #stock, #historial, #productos { scroll-margin-top: 90px; }
+
+
+/* Toast */
+.toast{
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  background: #0b1020;
+  border: 1px solid #24304a;
+  border-radius: 12px;
+  padding: 10px 12px;
+  max-width: 360px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.toast.ok{ border-color: #2f6f4e; }
+.toast.err{ border-color: #7a2f2f; }
+
+/* responsive */
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr; }
+}

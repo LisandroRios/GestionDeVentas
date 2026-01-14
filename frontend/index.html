@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Ventas</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <header class="topbar">
+    <h1>Gestión de Ventas</h1>
+    <p class="muted">Frontend (HTML/CSS/JS)</p>
+  </header>
+
+  <!-- Estado -->
+  <div class="container">
+    <section class="card" id="statusCard">
+      <h2>🟢 Estado</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="statLabel">Caja</div>
+          <div id="statusCash" class="statValue">-</div>
+        </div>
+        <div class="stat">
+          <div class="statLabel">Ventas hoy</div>
+          <div id="statusSales" class="statValue">-</div>
+        </div>
+        <div class="stat">
+          <div class="statLabel">Total hoy</div>
+          <div id="statusTotal" class="statValue">-</div>
+        </div>
+      </div>
+      <small class="muted">Se actualiza al refrescar Dashboard o al registrar una venta.</small>
+    </section>
+  </div>
+
+  <nav class="nav">
+    <a href="#caja">Caja</a>
+    <a href="#venta">Venta</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#stock">Stock bajo</a>
+    <a href="#historial">Ventas (hoy)</a>
+    <a href="#productos">Productos</a>
+  </nav>
+
+  <main class="container">
+
+    <!-- CAJA -->
+    <section class="card" id="caja">
+      <h2>✅ Caja</h2>
+
+      <div class="row">
+        <button id="btnCashCurrent">Ver caja actual</button>
+        <button id="btnCashOpen">Abrir caja</button>
+        <button id="btnCashClose">Cerrar caja</button>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>Monto inicial</label>
+          <input id="openingAmount" type="number" min="0" step="0.01" placeholder="Ej: 10000" />
+        </div>
+
+        <div class="field">
+          <label>Quién abre</label>
+          <input id="openedBy" type="text" placeholder="Ej: Lisan" />
+        </div>
+
+        <div class="field">
+          <label>Monto contado al cierre</label>
+          <input id="closingAmount" type="number" min="0" step="0.01" placeholder="Ej: 18000" />
+        </div>
+
+        <div class="field">
+          <label>Quién cierra</label>
+          <input id="closedBy" type="text" placeholder="Ej: Lisan" />
+        </div>
+      </div>
+
+      <pre id="outputCash" class="output">Listo para operar caja...</pre>
+    </section>
+
+    <!-- VENTA -->
+    <section class="card" id="venta">
+      <h2>🛒 Venta</h2>
+
+      <div class="row">
+        <button id="btnLoadProducts">Cargar productos</button>
+        <button id="btnReloadSettings">Recargar settings</button>
+        <button id="btnSalesToday">Ver ventas de hoy</button>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>Buscar</label>
+          <input id="searchBox" type="text" placeholder="Ej: remera, talle M..." />
+        </div>
+
+        <div class="field">
+          <label>Producto</label>
+          <select id="productSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Variante</label>
+          <select id="variantSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Cantidad</label>
+          <input id="qty" type="number" min="1" step="1" value="1" />
+        </div>
+
+        <div class="field">
+          <label>Medio de pago</label>
+          <select id="paymentMethod">
+            <option value="CASH">CASH</option>
+            <option value="TRANSFER">TRANSFER</option>
+            <option value="CARD_MP">CARD_MP</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <button id="btnAddItem">Agregar ítem</button>
+        <button id="btnConfirmSale">Confirmar venta</button>
+        <button id="btnClearCart">Vaciar</button>
+      </div>
+
+      <h3 style="margin: 12px 0 6px;">Carrito</h3>
+      <div class="row" style="justify-content: space-between; align-items:center; margin: 8px 0 6px;">
+        <small class="muted">Total estimado (sin descuento):</small>
+        <strong id="cartTotal">$0</strong>
+      </div>
+
+      <div id="cashDiscountRow" class="row hidden" style="justify-content: space-between; align-items:center; margin: 0 0 6px;">
+        <small class="muted">
+          Total con descuento (CASH): <span id="discountLabel"></span>
+        </small>
+        <strong id="cartTotalDiscounted">$0</strong>
+      </div>
+
+      <div id="cart" class="list"></div>
+
+      <h3 style="margin: 14px 0 6px;">Recibo</h3>
+      <div id="receipt" class="list">
+        <div class="itemRow"><small>Sin venta todavía.</small></div>
+      </div>
+
+      <pre id="outputSale" class="output">Listo para cargar una venta...</pre>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="card" id="dashboard">
+      <h2>📊 Dashboard (hoy)</h2>
+
+      <div class="row">
+        <button id="btnDashboard">Refrescar dashboard</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="statLabel">Ventas hoy</div>
+          <div id="statSales" class="statValue">-</div>
+        </div>
+        <div class="stat">
+          <div class="statLabel">Total hoy</div>
+          <div id="statTotal" class="statValue">-</div>
+        </div>
+        <div class="stat">
+          <div class="statLabel">Día</div>
+          <div id="statDay" class="statValue">-</div>
+        </div>
+      </div>
+
+      <h3 style="margin: 12px 0 6px;">Por medio de pago</h3>
+      <div id="breakdown" class="list"></div>
+
+      <h3 style="margin: 12px 0 6px;">Top items</h3>
+      <div id="topItems" class="list"></div>
+
+      <pre id="outputDash" class="output">Listo para ver el resumen del día...</pre>
+    </section>
+
+    <!-- LOW STOCK -->
+    <section class="card" id="stock">
+      <h2>⚠️ Stock bajo</h2>
+
+      <div class="row">
+        <button id="btnLowStock">Refrescar stock bajo</button>
+      </div>
+
+      <div id="lowStockList" class="list"></div>
+
+      <pre id="outputStock" class="output">Listo para chequear reposición...</pre>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="card" id="historial">
+      <h2>🧾 Ventas de hoy</h2>
+
+      <div class="row">
+  <div class="field" style="min-width:220px;">
+    <label>Fecha</label>
+    <input id="salesDay" type="date" />
+  </div>
+
+  <div class="field" style="min-width:220px;">
+    <label>Medio de pago</label>
+    <select id="salesPaymentFilter">
+      <option value="">Todos</option>
+      <option value="CASH">CASH</option>
+      <option value="TRANSFER">TRANSFER</option>
+      <option value="CARD_MP">CARD_MP</option>
+    </select>
+  </div>
+
+  <div class="field" style="align-self:end;">
+    <button id="btnSalesTodayRefresh">Refrescar</button>
+  </div>
+</div>
+
+
+      <div id="salesTodayList" class="list">
+        <div class="itemRow"><small>Sin datos todavía.</small></div>
+      </div>
+
+      <pre id="outputSalesToday" class="output">Listo para listar ventas...</pre>
+    </section>
+
+    <!-- PRODUCTOS / STOCK -->
+    <section class="card" id="productos">
+      <h2>📦 Productos / Stock</h2>
+
+      <div class="row">
+        <button id="btnProductsRefresh">Refrescar productos</button>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>Nuevo producto - Nombre</label>
+          <input id="newProductName" type="text" placeholder="Ej: Remera" />
+        </div>
+
+        <div class="field">
+          <label>Nuevo producto - Categoría</label>
+          <input id="newProductCategory" type="text" placeholder="Ej: Indumentaria" />
+        </div>
+
+        <div class="field">
+          <label>Nuevo producto - Activo</label>
+          <select id="newProductActive">
+            <option value="true" selected>Si</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+
+        <div class="field" style="align-self:end;">
+          <button id="btnCreateProduct">Crear producto</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #24304a;margin:14px 0;">
+
+      <div class="grid">
+        <div class="field">
+          <label>Producto (para variante)</label>
+          <select id="adminProductSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Nueva variante - Nombre</label>
+          <input id="newVariantName" type="text" placeholder="Ej: Talle M" />
+        </div>
+
+        <div class="field">
+          <label>SKU (opcional)</label>
+          <input id="newVariantSku" type="text" placeholder="Ej: REM-M-001" />
+        </div>
+
+        <div class="field">
+          <label>Precio</label>
+          <input id="newVariantPrice" type="number" min="0" step="0.01" placeholder="Ej: 12000" />
+        </div>
+
+        <div class="field">
+          <label>Stock inicial</label>
+          <input id="newVariantStock" type="number" min="0" step="1" placeholder="Ej: 10" />
+        </div>
+
+        <div class="field">
+          <label>Stock mínimo</label>
+          <input id="newVariantStockMin" type="number" min="0" step="1" placeholder="Ej: 3" />
+        </div>
+
+        <div class="field" style="align-self:end;">
+          <button id="btnCreateVariant">Crear variante</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #24304a;margin:14px 0;">
+
+      <div class="grid">
+        <div class="field">
+          <label>Variante (para ajustar)</label>
+          <select id="adminVariantSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Sumar / Restar stock (delta)</label>
+          <input id="stockDelta" type="number" step="1" placeholder="Ej: 5 o -2" />
+        </div>
+
+        <div class="field" style="align-self:end;">
+          <button id="btnApplyDelta">Aplicar delta</button>
+        </div>
+
+        <div class="field">
+          <label>Setear stock (reemplaza)</label>
+          <input id="stockSet" type="number" min="0" step="1" placeholder="Ej: 25" />
+        </div>
+
+        <div class="field" style="align-self:end;">
+          <button id="btnSetStock">Setear stock</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #24304a;margin:14px 0;">
+
+<h3 style="margin: 14px 0 6px;">Editar variante</h3>
+
+
+
+<div class="grid">
+  <div class="field">
+    <label>Variante (a editar)</label>
+    <select id="editVariantSelect"></select>
+  </div>
+
+  <div class="field">
+    <label>Nombre variante</label>
+    <input id="editVariantName" type="text" placeholder="Ej: Talle M" />
+  </div>
+
+  <div class="field">
+    <label>SKU</label>
+    <input id="editVariantSku" type="text" placeholder="Ej: REM-M-001" />
+  </div>
+
+  <div class="field">
+    <label>Precio</label>
+    <input id="editVariantPrice" type="number" min="0" step="0.01" placeholder="Ej: 12000" />
+  </div>
+
+  <div class="field">
+    <label>Stock mínimo</label>
+    <input id="editVariantStockMin" type="number" min="0" step="1" placeholder="Ej: 3" />
+  </div>
+
+  <div class="field" style="align-self:end;">
+    <button id="btnUpdateVariant">Guardar cambios</button>
+  </div>
+</div>
+
+
+      <h3 style="margin: 14px 0 6px;">Listado rápido</h3>
+      <div id="productsAdminList" class="list">
+        <div class="itemRow"><small>Refrescá productos para ver el listado.</small></div>
+      </div>
+
+      <pre id="outputProducts" class="output">Listo para cargar productos/variantes...</pre>
+    </section>
+
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
