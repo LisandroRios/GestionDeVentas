@@ -56,7 +56,7 @@
       <div class="row">
         <button id="btnCashCurrent">Ver caja actual</button>
         <button id="btnCashOpen">Abrir caja</button>
-        <button id="btnCashClose">Cerrar caja</button>
+        <button id="btnCashClose" data-admin-only="1" >Cerrar caja</button>
       </div>
 
       <div class="grid">
@@ -233,7 +233,7 @@
     </section>
 
     <!-- PRODUCTOS / STOCK -->
-    <section class="card" id="productos">
+    <section class="card" id="productos" data-admin-only="1">
       <h2>📦 Productos / Stock</h2>
 
       <div class="row">
@@ -260,7 +260,7 @@
         </div>
 
         <div class="field" style="align-self:end;">
-          <button id="btnCreateProduct">Crear producto</button>
+          <button id="btnCreateProduct" data-admin-only="1" >Crear producto</button>
         </div>
       </div>
 
@@ -298,7 +298,7 @@
         </div>
 
         <div class="field" style="align-self:end;">
-          <button id="btnCreateVariant">Crear variante</button>
+          <button id="btnCreateVariant" data-admin-only="1" >Crear variante</button>
         </div>
       </div>
 
@@ -316,7 +316,7 @@
         </div>
 
         <div class="field" style="align-self:end;">
-          <button id="btnApplyDelta">Aplicar delta</button>
+          <button id="btnApplyDelta" data-admin-only="1" >Aplicar delta</button>
         </div>
 
         <div class="field">
@@ -325,7 +325,7 @@
         </div>
 
         <div class="field" style="align-self:end;">
-          <button id="btnSetStock">Setear stock</button>
+          <button id="btnSetStock" data-admin-only="1" >Setear stock</button>
         </div>
       </div>
 
@@ -362,7 +362,7 @@
   </div>
 
   <div class="field" style="align-self:end;">
-    <button id="btnUpdateVariant">Guardar cambios</button>
+    <button id="btnUpdateVariant" data-admin-only="1" >Guardar cambios</button>
   </div>
 </div>
 

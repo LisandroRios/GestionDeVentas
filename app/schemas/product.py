@@ -57,3 +57,13 @@ class ProductVariantUpdate(BaseModel):
     price: Optional[float] = Field(default=None, gt=0)
     stock: Optional[int] = Field(default=None, ge=0)
     stock_min: Optional[int] = Field(default=None, ge=0)
+
+class StockAdjust(BaseModel):
+    delta: int = Field(..., description="Puede ser positivo o negativo")
+    reason: Optional[str] = Field(default=None, max_length=200)
+    actor: Optional[str] = Field(default=None, max_length=120)
+
+class StockSet(BaseModel):
+    stock: int = Field(..., ge=0)
+    reason: Optional[str] = Field(default=None, max_length=200)
+    actor: Optional[str] = Field(default=None, max_length=120)

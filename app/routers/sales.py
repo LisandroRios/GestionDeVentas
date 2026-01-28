@@ -12,6 +12,10 @@ from app.models.settings import Settings
 from app.schemas.sale import SaleCreate, SaleOut
 from app.models.cash import CashSession
 
+from sqlalchemy import func
+from app.models.stock_movement import StockMovement
+
+
 
 router = APIRouter(prefix="/sales", tags=["sales"])
 
@@ -50,61 +54,64 @@ def _has_open_cash(db: Session) -> bool:
 def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
     if not _has_open_cash(db):
         raise HTTPException(
-        status_code=400,
-        detail="Cannot register sale: no open cash session",
-    )
+            status_code=400,
+            detail="Cannot register sale: no open cash session",
+        )
 
     if not payload.items:
         raise HTTPException(status_code=400, detail="Sale must contain at least 1 item")
 
     settings = _get_settings(db)
 
-    # 1) Traer variantes
-    variant_ids = [i.variant_id for i in payload.items]
+    # ✅ 0) Consolidar items por variant_id (por si viene repetida la misma variante)
+    qty_by_variant: dict[int, int] = {}
+    for it in payload.items:
+        if it.quantity <= 0:
+            raise HTTPException(status_code=400, detail="Quantity must be > 0")
+        qty_by_variant[it.variant_id] = qty_by_variant.get(it.variant_id, 0) + it.quantity
 
+    variant_ids = list(qty_by_variant.keys())
+
+    # ✅ 1) Traer variantes con LOCK (evita condiciones de carrera de stock)
     variants = (
         db.query(ProductVariant)
         .filter(ProductVariant.id.in_(variant_ids))
+        .with_for_update()
         .all()
     )
     variant_map = {v.id: v for v in variants}
 
     missing = [vid for vid in variant_ids if vid not in variant_map]
     if missing:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Variant not found: {missing}",
-        )
+        raise HTTPException(status_code=404, detail=f"Variant not found: {missing}")
 
-    # Validar stock
-    for item in payload.items:
-        variant = variant_map[item.variant_id]
-        if item.quantity <= 0:
-            raise HTTPException(status_code=400, detail="Quantity must be > 0")
-        if variant.stock < item.quantity:
+    # ✅ 2) Validar stock contra la cantidad consolidada
+    for vid, qty in qty_by_variant.items():
+        variant = variant_map[vid]
+        if variant.stock < qty:
             raise HTTPException(
                 status_code=400,
                 detail=(
                     f"Insufficient stock for variant_id={variant.id}. "
-                    f"Available={variant.stock}, requested={item.quantity}"
+                    f"Available={variant.stock}, requested={qty}"
                 ),
             )
 
-    # 2) Calcular totales
+    # ✅ 3) Calcular totales usando los items originales (o usando qty_by_variant)
+    # Recomiendo generar SaleItems usando qty_by_variant para que quede limpio:
     subtotal = Decimal("0.00")
     sale_items: List[SaleItem] = []
 
-    for item in payload.items:
-        variant = variant_map[item.variant_id]
+    for vid, qty in qty_by_variant.items():
+        variant = variant_map[vid]
         unit_price = Decimal(str(variant.price))
-        line_total = unit_price * Decimal(item.quantity)
+        line_total = unit_price * Decimal(qty)
 
         subtotal += line_total
-
         sale_items.append(
             SaleItem(
                 variant_id=variant.id,
-                quantity=item.quantity,
+                quantity=qty,
                 unit_price_at_sale=unit_price,
                 line_total=line_total,
             )
@@ -121,7 +128,6 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
     subtotal = subtotal.quantize(Decimal("0.01"))
     total = total.quantize(Decimal("0.01"))
 
-    # 3) Transacción
     try:
         sale = Sale(
             payment_method=payload.payment_method,
@@ -130,16 +136,32 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
             total=total,
         )
         db.add(sale)
-        db.flush()  # obtenemos sale.id
+        db.flush()  # sale.id
 
         for si in sale_items:
             si.sale_id = sale.id
             db.add(si)
 
-        # descontar stock
-        for item in payload.items:
-            variant = variant_map[item.variant_id]
-            variant.stock -= item.quantity
+        # ✅ 4) Descontar stock (consolidado) + doble check anti-negativo
+        for vid, qty in qty_by_variant.items():
+            variant = variant_map[vid]
+            next_stock = variant.stock - qty
+            if next_stock < 0:
+                # esto no debería pasar por validación + lock, pero es “cinturón y tiradores”
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Stock would become negative for variant_id={vid}",
+                )
+            variant.stock = next_stock
+
+        db.add(StockMovement(
+    variant_id=variant.id,
+    delta=-qty,
+    before_stock=int(variant.stock),
+    after_stock=int(next_stock),
+    reason=f"sale:{sale.id}",
+    actor=getattr(payload, "actor", None),
+))
 
         db.commit()
 
@@ -151,12 +173,12 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
         )
         return sale
 
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not create sale: {str(e)}",
-        )
+        raise HTTPException(status_code=500, detail=f"Could not create sale: {str(e)}")
 
 
 # -------------------------

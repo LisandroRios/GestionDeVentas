@@ -11,6 +11,10 @@ from typing import Optional
 from sqlalchemy.orm import selectinload
 from app.schemas.product import ProductUpdate, ProductVariantUpdate
 
+from app.models.stock_movement import StockMovement
+from app.schemas.product import StockAdjust, StockSet
+
+
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -158,17 +162,91 @@ def update_variant(variant_id: int, payload: ProductVariantUpdate, db: Session =
             raise HTTPException(status_code=400, detail="Variant already exists for this product")
         variant.variant_name = new_vname
 
-    if payload.sku is not None:
-        variant.sku = payload.sku.strip() if payload.sku else None
+    if payload.price is not None:
+        if payload.price < 0:
+            raise HTTPException(status_code=400, detail="Price cannot be negative")
+    variant.price = payload.price
+
 
     if payload.price is not None:
         variant.price = payload.price
 
     if payload.stock is not None:
-        variant.stock = payload.stock
+        if payload.stock < 0:
+            raise HTTPException(status_code=400, detail="Stock cannot be negative")
+    variant.stock = payload.stock
+
 
     if payload.stock_min is not None:
-        variant.stock_min = payload.stock_min
+        if payload.stock_min < 0:
+            raise HTTPException(status_code=400, detail="stock_min cannot be negative")
+    variant.stock_min = payload.stock_min
+
+@router.post("/variants/{variant_id}/adjust-stock", response_model=ProductVariantOut)
+def adjust_stock(variant_id: int, payload: StockAdjust, db: Session = Depends(get_db)):
+    v = (
+        db.query(ProductVariant)
+        .filter(ProductVariant.id == variant_id)
+        .with_for_update()
+        .first()
+    )
+    if not v:
+        raise HTTPException(status_code=404, detail="Variant not found")
+
+    before = int(v.stock)
+    after = before + int(payload.delta)
+
+    if after < 0:
+        raise HTTPException(status_code=400, detail="Stock cannot be negative")
+
+    v.stock = after
+
+    db.add(StockMovement(
+        variant_id=v.id,
+        delta=int(payload.delta),
+        before_stock=before,
+        after_stock=after,
+        reason=(payload.reason.strip() if payload.reason else None),
+        actor=(payload.actor.strip() if payload.actor else None),
+    ))
+
+    db.commit()
+    db.refresh(v)
+    return v
+
+
+@router.post("/variants/{variant_id}/set-stock", response_model=ProductVariantOut)
+def set_stock(variant_id: int, payload: StockSet, db: Session = Depends(get_db)):
+    v = (
+        db.query(ProductVariant)
+        .filter(ProductVariant.id == variant_id)
+        .with_for_update()
+        .first()
+    )
+    if not v:
+        raise HTTPException(status_code=404, detail="Variant not found")
+
+    before = int(v.stock)
+    after = int(payload.stock)
+    if after < 0:
+        raise HTTPException(status_code=400, detail="Stock cannot be negative")
+
+    delta = after - before
+    v.stock = after
+
+    db.add(StockMovement(
+        variant_id=v.id,
+        delta=int(delta),
+        before_stock=before,
+        after_stock=after,
+        reason=(payload.reason.strip() if payload.reason else None),
+        actor=(payload.actor.strip() if payload.actor else None),
+    ))
+
+    db.commit()
+    db.refresh(v)
+    return v
+
 
     db.commit()
     db.refresh(variant)

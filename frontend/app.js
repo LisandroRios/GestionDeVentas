@@ -1,5 +1,12 @@
 const API_BASE = "http://127.0.0.1:8000";
 
+// Sprint 6 - Roles (frontend-only por ahora)
+const ROLE = "ADMIN"; // "CAJERO" | "ADMIN"
+const isAdmin = () => ROLE === "ADMIN";
+const ACTOR = "Lisandro"; // después lo reemplazamos por login real
+
+
+
 /* ---------- Helpers ---------- */
 async function api(method, path, body) {
   const opts = { method, headers: { "Content-Type": "application/json" } };
@@ -846,6 +853,7 @@ btnCashOpen?.addEventListener("click", async () => {
 });
 
 btnCashClose?.addEventListener("click", async () => {
+  if (!isAdmin()) { notifyErr("Solo ADMIN puede cerrar caja"); return; }
   if (!confirm("¿Seguro que querés CERRAR la caja?")) return;
 
   await withLoading(btnCashClose, "Cerrando...", async () => {
@@ -1085,8 +1093,29 @@ sections.forEach(sec => observer.observe(sec));
 if (location.hash) setActive(location.hash.replace("#", ""));
 else if (sections[0]) setActive(sections[0].id);
 
+function applyRolePermissions() {
+  // 1) ocultar secciones admin
+  document.querySelectorAll('[data-admin-only="1"]').forEach(el => {
+    if (!isAdmin()) {
+      // si es sección, ocultala; si es botón, deshabilitalo
+      if (el.tagName === "SECTION") el.classList.add("hidden");
+      else el.disabled = true;
+    } else {
+      if (el.tagName === "SECTION") el.classList.remove("hidden");
+      else el.disabled = false;
+    }
+  });
+
+  // 2) si no es admin, evitá que “Productos” quede activo en el menú
+  if (!isAdmin() && location.hash === "#productos") {
+    location.hash = "#venta";
+  }
+}
+
+
 /* ---------- init ---------- */
 async function safeRun(label, fn) {
+  applyRolePermissions();
   try {
     return await fn();
   } catch (e) {
